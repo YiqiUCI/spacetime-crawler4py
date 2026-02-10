@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urldefrag, urljoin
+from bs4 import BeautifulSoup
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -7,15 +8,36 @@ def scraper(url, resp):
 
 def extract_next_links(url, resp):
     # Implementation required.
+    links =  []
+    if resp is None:
+        return links
+
+
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
     # resp.status: the status code returned by the server. 200 is OK, you got the page. Other numbers mean that there was some kind of problem.
     # resp.error: when status is not 200, you can check the error here, if needed.
     # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
-    #         resp.raw_response.url: the url, again
+    #         resp.raw_response.url: the  url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    return list()
+    if resp.status != 200 or resp.raw_response is None:
+        return links
+    typeH = resp.raw_response.headers.get('Content-Type',"")
+    if "text/html" not in typeH.lower():
+        return links
+    html = resp.raw_response.content
+    if not html:
+        return links
+    soup = BeautifulSoup(html, "lxml")
+
+    for a in soup.find_all("a", href=True):
+        href = a.get("href")
+        abs_url = urljoin(url, href)
+        abs_url, _ = urldefrag(abs_url)
+        links.append(abs_url)
+
+    return links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -25,6 +47,18 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+
+        host = parsed.hostname
+        if host is None:
+            return False
+        if not (
+                host.endswith(".ics.uci.edu") or
+                host.endswith(".cs.uci.edu") or
+                host.endswith(".informatics.uci.edu") or
+                host.endswith(".stat.uci.edu")
+        ):
+            return False
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
