@@ -181,7 +181,12 @@ def is_valid(url):
         # Picture
         if "/pix/" in path:
             return False
+        # Avoid infinity quuery
+        if "doku.php" in path:
+            return False
 
+        if parsed.hostname and parsed.hostname.startswith("intranet."):
+            return False
         if len(url) > 300:
             return False
         if parsed.query.count("&") >= 6:
