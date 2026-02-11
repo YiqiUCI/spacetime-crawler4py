@@ -148,14 +148,14 @@ def report_output():
         f.write(f"{longest_page[0]} — {longest_page[1]} words")
 
     # 3. Top 50 words
-    print("Top 50 Words written to top50_words.txt")
+    print("50 Most Common Words")
     top50 = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:50]
     with open("top50_words.txt", "w") as f:
         for word, freq in top50:
             f.write(f"{word}: {freq}\n")
 
     # 4. Subdomains
-    print("Subdomain counts written to subdomains.txt")
+    print("Subdomains found")
     sorted_subdomains = sorted(subdomain_counts.items())
     with open("subdomains.txt", "w") as f:
         for sub, count in sorted_subdomains:
