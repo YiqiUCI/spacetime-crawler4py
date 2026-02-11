@@ -150,11 +150,12 @@ def is_valid(url):
         path = parsed.path.lower()
         query = parsed.query.lower()
 
-        # White list
-        if re.search(r"/event/[^/]+/?$", path) or re.search(r"/events/[^/]+/?$", path):
-            return True
+
         # calendar/day
         if re.search(r"/day/\d{4}-\d{2}-\d{2}", path):
+            return False
+
+        if re.search(r"^/events/.*/list/?$", path):
             return False
 
         if "tribe-bar-date=" in query or "eventdisplay=" in query:
