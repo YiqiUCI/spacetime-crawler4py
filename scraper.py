@@ -1,6 +1,9 @@
+
+from bs4 import BeautifulSoup
 import re
 from urllib.parse import urlparse, urldefrag, urljoin
-from bs4 import BeautifulSoup
+
+
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -27,17 +30,28 @@ def extract_next_links(url, resp):
     if "text/html" not in typeH.lower():
         return links
     html = resp.raw_response.content
+
     if not html:
         return links
+
     soup = BeautifulSoup(html, "lxml")
+
+    base = resp.url if resp.url else url
 
     for a in soup.find_all("a", href=True):
         href = a.get("href")
-        abs_url = urljoin(url, href)
+        if not href:
+            continue
+
+        href = href.strip()
+        if href.startswith("#"):
+            continue
+
+        abs_url = urljoin(base, href)
         abs_url, _ = urldefrag(abs_url)
         links.append(abs_url)
 
-    return links
+    return list(dict.fromkeys(links))
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -57,6 +71,11 @@ def is_valid(url):
                 host.endswith(".informatics.uci.edu") or
                 host.endswith(".stat.uci.edu")
         ):
+            return False
+
+        if len(url) > 300:
+            return False
+        if parsed.query.count("/") >= 50:
             return False
 
         return not re.match(
