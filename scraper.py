@@ -112,7 +112,7 @@ def is_valid(url):
         if host is None:
             return False
         if not (
-                host.endswith(".ics.uci.edu") or
+                host.endsw ith(".ics.uci.edu") or
                 host.endswith(".cs.uci.edu") or
                 host.endswith(".informatics.uci.edu") or
                 host.endswith(".stat.uci.edu")
