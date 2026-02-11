@@ -43,32 +43,45 @@ def scraper(url, resp):
     # Extract text and count words
     if resp and resp.status == 200 and resp.raw_response:
         typeH = resp.raw_response.headers.get('Content-Type', "")
+
         if "text/html" in typeH.lower():
             html = resp.raw_response.content
-            if html:
-                UniqueURLs.add(clean_url)
-                host = urlparse(clean_url).hostname
-                if host and host.endswith(".uci.edu"):
-                    SubdomainURLs[host].add(clean_url)
 
-                soup = BeautifulSoup(html, "lxml")
-                text = soup.get_text(separator=" ").lower()
-                words = re.findall(r"[a-z]+(?:'[a-z]+)?", text)
-                count = 0
-                for w in words:
-                    if w not in STOPWORDS:
-                        WordFreq[w] = WordFreq.get(w, 0) + 1
-                        count += 1
+            if not html or len(html) < 200:
+                return []
+            soup = BeautifulSoup(html, "lxml")
+            text_raw = soup.get_text(" ", strip=True)
 
-                global longest_page
-                if count > longest_page[1]:
-                    longest_page = (clean_url, count)
-                if len(UniqueURLs) % 200 == 0:
-                    print("---- Progress ----")
-                    print("Unique pages:", len(UniqueURLs))
-                    print("Current longest:", longest_page[0], "-", longest_page[1])
-                    print("Subdomains so far:", len(SubdomainURLs))
-                    print("------------------")
+            if len(text_raw) < 200:
+                return []
+
+            lower = text_raw.lower()
+
+            if "page not found" in lower or "404 not found" in lower:
+                return []
+
+            UniqueURLs.add(clean_url)
+
+            host = urlparse(clean_url).hostname
+            if host and host.endswith(".uci.edu"):
+                SubdomainURLs[host].add(clean_url)
+
+            words = re.findall(r"[a-z]+(?:'[a-z]+)?", lower)
+            count = 0
+            for w in words:
+                if w not in STOPWORDS:
+                    WordFreq[w] = WordFreq.get(w, 0) + 1
+                    count += 1
+
+            global longest_page
+            if count > longest_page[1]:
+                longest_page = (clean_url, count)
+            if len(UniqueURLs) % 200 == 0:
+                print("---- Progress ----")
+                print("Unique pages:", len(UniqueURLs))
+                print("Current longest:", longest_page[0], "-", longest_page[1])
+                print("Subdomains so far:", len(SubdomainURLs))
+                print("------------------")
 
 
     # go back to normal crawling
@@ -165,6 +178,10 @@ def is_valid(url):
         if "ical=" in query or "outlook-ical=" in query:
             return False
 
+        # Picture
+        if "/pix/" in path:
+            return False
+
         if len(url) > 300:
             return False
         if parsed.query.count("&") >= 6:
@@ -178,7 +195,9 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$"
+              r"|py|ipynb|c|cpp|h|java|m|r|go", parsed.path.lower())
+
 
     except TypeError:
         print ("TypeError for ", parsed)
