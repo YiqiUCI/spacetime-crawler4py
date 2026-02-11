@@ -2,7 +2,67 @@ import re
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 
+# variables used for the report_output function
+unique_urls = set()
+subdomain_counts = {}
+word_freq = {}
+longest_page = ("", 0)  # (url, word_count)
+
+# list of stop words we plan to use
+STOPWORDS = {
+    "a","about","above","after","again","against","all","am","an","and","any",
+    "are","aren't","as","at","be","because","been","before","being","below",
+    "between","both","but","by","can't","cannot","could","couldn't","did",
+    "didn't","do","does","doesn't","doing","don't","down","during","each",
+    "few","for","from","further","had","hadn't","has","hasn't","have",
+    "haven't","having","he","he'd","he'll","he's","her","here","here's",
+    "hers","herself","him","himself","his","how","how's","i","i'd","i'll",
+    "i'm","i've","if","in","into","is","isn't","it","it's","its","itself",
+    "let's","me","more","most","mustn't","my","myself","no","nor","not","of",
+    "off","on","once","only","or","other","ought","our","ours","ourselves",
+    "out","over","own","same","shan't","she","she'd","she'll","she's",
+    "should","shouldn't","so","some","such","than","that","that's","the",
+    "their","theirs","them","themselves","then","there","there's","these",
+    "they","they'd","they'll","they're","they've","this","those","through",
+    "to","too","under","until","up","very","was","wasn't","we","we'd","we'll",
+    "we're","we've","were","weren't","what","what's","when","when's","where",
+    "where's","which","while","who","who's","whom","why","why's","with",
+    "won't","would","wouldn't","you","you'd","you'll","you're","you've",
+    "your","yours","yourself","yourselves"
+}
+
 def scraper(url, resp):
+    # Track unique URLs
+    clean_url, _ = urldefrag(url)
+    unique_urls.add(clean_url)
+
+    # Track subdomains
+    parsed = urlparse(clean_url)
+    host = parsed.hostname
+    if host and host.endswith(".uci.edu"):
+        subdomain_counts[host] = subdomain_counts.get(host, 0) + 1
+
+    # Extract text and count words
+    if resp and resp.status == 200 and resp.raw_response:
+        typeH = resp.raw_response.headers.get('Content-Type', "")
+        if "text/html" in typeH.lower():
+            html = resp.raw_response.content
+            if html:
+                soup = BeautifulSoup(html, "lxml")
+                text = soup.get_text(separator=" ").lower()
+                words = re.findall(r"[a-zA-Z]+", text)
+
+                count = 0
+                for w in words:
+                    if w not in STOPWORDS:
+                        word_freq[w] = word_freq.get(w, 0) + 1
+                        count += 1
+
+                global longest_page
+                if count > longest_page[1]:
+                    longest_page = (clean_url, count)
+
+    # go back to normal crawling
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -72,3 +132,31 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+# The report output / summary to the 4 questions
+def report_output():
+    print("Report Output\n")
+
+    # 1. Unique pages
+    print("Number of Unique Pages:", len(unique_urls))
+    with open("unique_pages.txt", "w") as f:
+        f.write(str(len(unique_urls)))
+
+    # 2. Longest page
+    print("Longest Page:", longest_page[0], "-", longest_page[1], "words")
+    with open("longest_page.txt", "w") as f:
+        f.write(f"{longest_page[0]} — {longest_page[1]} words")
+
+    # 3. Top 50 words
+    print("Top 50 Words written to top50_words.txt")
+    top50 = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:50]
+    with open("top50_words.txt", "w") as f:
+        for word, freq in top50:
+            f.write(f"{word}: {freq}\n")
+
+    # 4. Subdomains
+    print("Subdomain counts written to subdomains.txt")
+    sorted_subdomains = sorted(subdomain_counts.items())
+    with open("subdomains.txt", "w") as f:
+        for sub, count in sorted_subdomains:
+            f.write(f"{sub}, {count}\n")
