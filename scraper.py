@@ -116,6 +116,12 @@ def extract_next_links(url, resp):
         if href.startswith("mailto:") or href.startswith("javascript:"):
             continue
 
+        bad_chars = {'“', '”', '‘', '’', '"', "'", '<', '>', '\\'}
+        if any(ch in href for ch in bad_chars):
+            continue
+
+        if any(ch.isspace() for ch in href):
+            continue
         abs_url = urljoin(base, href)
         abs_url, _ = urldefrag(abs_url)
         links.append(abs_url)
@@ -140,6 +146,22 @@ def is_valid(url):
                 host.endswith(".informatics.uci.edu") or
                 host.endswith(".stat.uci.edu")
         ):
+            return False
+        path = parsed.path.lower()
+        query = parsed.query.lower()
+
+        # calendar/day
+        if re.search(r"/day/\d{4}-\d{2}-\d{2}", path):
+            return False
+
+        if "tribe-bar-date=" in query or "eventdisplay=" in query:
+            return False
+
+        # calendar exports
+        if "ical=" in query or "outlook-ical=" in query:
+            return False
+
+        if "/events/" in path and ("/list/" in path or "/day/" in path):
             return False
 
         if len(url) > 300:
