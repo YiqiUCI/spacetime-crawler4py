@@ -165,6 +165,7 @@ def is_valid(url):
 def report_output():
     print("Report Output\n")
 
+
     # 1. Unique pages
     print("Number of Unique Pages:", len(UniqueURLs))
     with open("unique_pages.txt", "w") as f:
