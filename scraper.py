@@ -67,7 +67,7 @@ def scraper(url, resp):
                     print("---- Progress ----")
                     print("Unique pages:", len(UniqueURLs))
                     print("Current longest:", longest_page[0], "-", longest_page[1])
-                    print("Subdomains so far:", len(UniqueURLs))
+                    print("Subdomains so far:", len(SubdomainURLs))
                     print("------------------")
 
 
