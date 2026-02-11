@@ -150,6 +150,9 @@ def is_valid(url):
         path = parsed.path.lower()
         query = parsed.query.lower()
 
+        # White list
+        if re.search(r"/event/[^/]+/?$", path) or re.search(r"/events/[^/]+/?$", path):
+            return True
         # calendar/day
         if re.search(r"/day/\d{4}-\d{2}-\d{2}", path):
             return False
@@ -159,9 +162,6 @@ def is_valid(url):
 
         # calendar exports
         if "ical=" in query or "outlook-ical=" in query:
-            return False
-
-        if "/events/" in path and ("/list/" in path or "/day/" in path):
             return False
 
         if len(url) > 300:
