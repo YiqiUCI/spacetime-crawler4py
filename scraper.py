@@ -36,7 +36,8 @@ STOPWORDS = {
 
 def scraper(url, resp):
     # Track unique URLs
-    clean_url, _ = urldefrag(url)
+    newURL = resp.url if (resp and resp.url) else url
+    clean_url, _ = urldefrag(newURL)
     # Track subdomains
 
 
@@ -47,7 +48,7 @@ def scraper(url, resp):
         if "text/html" in typeH.lower():
             html = resp.raw_response.content
 
-            if not html or len(html) < 200:
+            if not html or len(html) < 150:
                 return []
             soup = BeautifulSoup(html, "lxml")
             text_raw = soup.get_text(" ", strip=True)
@@ -182,8 +183,9 @@ def is_valid(url):
         if "/pix/" in path:
             return False
         # Avoid infinity quuery
-        if "doku.php" in path:
+        if "doku.php" in path and ("do=" in query or "idx=" in query or "tab_" in query or "image=" in query):
             return False
+
 
         if parsed.hostname and parsed.hostname.startswith("intranet."):
             return False
@@ -193,15 +195,8 @@ def is_valid(url):
             return False
 
         return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$"
-              r"|py|ipynb|c|cpp|h|java|m|r|go", parsed.path.lower())
+            r".*\.(css|js|bmp|gif|jpe?g|ico|png|tiff?|mid|mp2|mp3|mp4|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso|epub|dll|cnf|tgz|sha1|thmx|mso|arff|rtf|jar|csv|rm|smil|wmv|swf|wma|zip|rar|gz|py|ipynb|c|cpp|h|java|m|r|go)$",
+            parsed.path.lower())
 
 
     except TypeError:
@@ -236,3 +231,6 @@ def report_output():
     with open("subdomains.txt", "w") as f:
         for sub, count in sorted_subdomains:
             f.write(f"{sub}, {count}\n")
+
+import atexit
+atexit.register(report_output)
