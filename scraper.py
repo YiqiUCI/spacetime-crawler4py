@@ -51,6 +51,10 @@ def scraper(url, resp):
             if not html or len(html) < 150:
                 return []
             soup = BeautifulSoup(html, "lxml")
+
+            # Remove tags with no information
+            for tag in soup(["script", "style", "noscript"]):
+                tag.decompose()
             text_raw = soup.get_text(" ", strip=True)
 
             if len(text_raw) < 200:
@@ -58,7 +62,7 @@ def scraper(url, resp):
 
             lower = text_raw.lower()
 
-            if "page not found" in lower or "404 not found" in lower or "whoops! We are having trouble location your page!" in lower:
+            if "page not found" in lower or "404 not found" in lower or "whoops! we are having trouble location your page" in lower:
                 return []
 
             UniqueURLs.add(clean_url)
@@ -86,7 +90,7 @@ def scraper(url, resp):
 
 
     # go back to normal crawling
-    links = extract_next_links(url, resp)
+    links = extract_next_links(newURL, resp)
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
