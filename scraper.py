@@ -58,7 +58,7 @@ def scraper(url, resp):
 
             lower = text_raw.lower()
 
-            if "page not found" in lower or "404 not found" in lower:
+            if "page not found" in lower or "404 not found" in lower or "whoops! We are having trouble location your page!" in lower:
                 return []
 
             UniqueURLs.add(clean_url)
