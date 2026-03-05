@@ -34,29 +34,33 @@ STOPWORDS = {
     "your","yours","yourself","yourselves"
 }
 
+#The scraper processes the downloaded webpage. It extracts useful information, collects statistics, and finds hyperlinks from the page.
 def scraper(url, resp):
     # Track unique URLs
+    # Handle redirects using `resp.url` and merge fragment versions of the same page with `urldefrag` to avoid duplicates.
     newURL = resp.url if (resp and resp.url) else url
     clean_url, _ = urldefrag(newURL)
     # Track subdomains
 
 
-    # Extract text and count words
+    # Extract text and count words, and also limit html only for URL
     if resp and resp.status == 200 and resp.raw_response:
         typeH = resp.raw_response.headers.get('Content-Type', "")
 
         if "text/html" in typeH.lower():
             html = resp.raw_response.content
 
+            #remove empty pages and trash (HTML is too small)
             if not html or len(html) < 150:
                 return []
             soup = BeautifulSoup(html, "lxml")
 
-            # Remove tags with no information
+            # Remove tags with no information, remove information for less content pages
             for tag in soup(["script", "style", "noscript"]):
                 tag.decompose()
             text_raw = soup.get_text(" ", strip=True)
 
+            #The extracted text is too short.
             if len(text_raw) < 200:
                 return []
 
